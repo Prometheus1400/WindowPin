@@ -12,6 +12,12 @@ struct WindowPinSettingsContent: View {
     @AppStorage("forwardEvents") private var forwardEvents: Bool = true
     @AppStorage("pinToAllSpaces") private var pinToAllSpaces: Bool = false
 
+    /// Both kept current by JorvikKit — see `JorvikPermissionWatcher`. These two rows used
+    /// to be read inline in `body`, so nothing ever caused them to re-render and granting
+    /// either permission left the row still asking for it.
+    @StateObject private var accessibility = JorvikPermissionWatcher.accessibility()
+    @StateObject private var screenRecording = JorvikPermissionWatcher.screenRecording()
+
     var body: some View {
         Section("Overlays") {
             Picker("Maximum frame rate", selection: $captureRate) {
@@ -63,14 +69,13 @@ struct WindowPinSettingsContent: View {
             HStack {
                 Text("Accessibility")
                 Spacer()
-                if AXIsProcessTrusted() {
+                if accessibility.isGranted {
                     Label("Granted", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                         .font(.caption)
                 } else {
                     Button("Grant Access") {
-                        let opts = [kAXTrustedCheckOptionPrompt.takeRetainedValue(): true] as CFDictionary
-                        AXIsProcessTrustedWithOptions(opts)
+                        JorvikPermissionWatcher.promptForAccessibility()
                     }
                     .font(.caption)
                 }
@@ -79,13 +84,18 @@ struct WindowPinSettingsContent: View {
             HStack {
                 Text("Screen Recording")
                 Spacer()
-                if CGPreflightScreenCaptureAccess() {
+                if screenRecording.isGranted {
                     Label("Granted", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                         .font(.caption)
                 } else {
                     Button("Grant Access") {
-                        CGRequestScreenCaptureAccess()
+                        // The prompt only ever appears once; after a denial this silently
+                        // records a request and returns false, so send them where they can
+                        // actually flip it.
+                        if !CGRequestScreenCaptureAccess() {
+                            JorvikPermissionWatcher.openSettings(pane: .screenRecording)
+                        }
                     }
                     .font(.caption)
                 }
