@@ -28,7 +28,7 @@ After installation:
 
 WindowPin mirrors any window as a floating overlay that stays on top of everything else. The overlay is a live ScreenCaptureKit stream — it updates the moment the window's content changes (up to a configurable frame rate) and costs essentially nothing while the content is static.
 
-Clicks and scrolls on the overlay are forwarded to the real window, so you can scroll a pinned document or click a button in it without leaving the app you're working in. Keyboard input always stays with your active app — to type into the pinned window, switch to it (⌘-click the overlay).
+Clicks and scrolls on the overlay are forwarded to the real window, so you can scroll a pinned document or click a button in it without leaving the app you're working in. Keyboard input always stays with your active app — to type into the pinned window, switch to it (`command`-click the overlay).
 
 When you switch to the app that owns a pinned window, the overlay automatically drops behind the real window so you interact with the actual app — not the overlay.
 
@@ -39,7 +39,7 @@ There are two ways to pin a window:
 ### Using the keyboard shortcut
 
 1. Click the window you want to pin to bring it to the front
-2. Press **⌃⌘P** (Ctrl+Cmd+P)
+2. Press `control` `command` `P`
 3. The window is now pinned — a live overlay appears on top of all other windows
 
 Press the shortcut again to unpin.
@@ -52,9 +52,9 @@ Press the shortcut again to unpin.
 
 ## Unpinning
 
-- **Keyboard shortcut**: Bring the pinned window to the front and press **⌃⌘P**
+- **Keyboard shortcut**: Bring the pinned window to the front and press `control` `command` `P`
 - **Menu**: Click the pin icon in the menu bar and click **Unpin** next to the window, or choose **Unpin All**
-- **⌘-click the overlay**: Brings the real window to the front and hides the overlay behind it
+- **`command`-click the overlay**: Brings the real window to the front and hides the overlay behind it
 
 Closed windows are automatically unpinned.
 
@@ -64,7 +64,7 @@ Closed windows are automatically unpinned.
 |--------|--------|
 | Click, drag, or right-click an overlay | Forwarded to the real window — buttons, links, and text selection work in place |
 | Scroll on an overlay | Scrolls the real window |
-| ⌘-click an overlay | Brings the real window to the front; overlay drops behind it |
+| `command`-click an overlay | Brings the real window to the front; overlay drops behind it |
 | Type | Keyboard input is never forwarded — it stays with your active app |
 | Switch to the pinned window's app | Overlay automatically drops behind the real window |
 | Switch to a different app | Overlay floats back on top |
@@ -95,7 +95,7 @@ Caps how fast the overlay can update. Frames are only captured when the window's
 
 ### Interact Through Overlays
 
-On by default: clicks and scrolls on an overlay are forwarded to the pinned window, and ⌘-click switches to the real window. When off, any click on an overlay switches to the real window.
+On by default: clicks and scrolls on an overlay are forwarded to the pinned window, and `command`-click switches to the real window. When off, any click on an overlay switches to the real window.
 
 ### Pin to All Spaces
 
@@ -103,7 +103,7 @@ When enabled, pinned overlays appear on every Mission Control space. When disabl
 
 ### Custom Keyboard Shortcut
 
-Click **Change Shortcut** in the menu, then press your desired key combination. The shortcut must include at least one modifier key (⌘, ⌃, ⌥, or ⇧).
+Click **Change Shortcut** in the menu, then press your desired key combination. The shortcut must include at least one modifier key (`command`, `control`, `option`, or `shift`).
 
 ### Menu Bar Icon
 
@@ -150,7 +150,7 @@ git clone https://github.com/PerpetualBeta/jorvik-release.git
 git clone https://github.com/PerpetualBeta/WindowPin.git
 cd WindowPin
 gmake build
-open .build/WindowPin.app
+open.build/WindowPin.app
 ```
 
 ## Troubleshooting
