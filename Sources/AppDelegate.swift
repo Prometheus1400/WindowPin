@@ -21,11 +21,11 @@ private func hotkeyTapCallback(
         if let tap = _eventTap {
             CGEvent.tapEnable(tap: tap, enable: true)
         }
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     guard type == .keyDown else {
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
@@ -41,7 +41,7 @@ private func hotkeyTapCallback(
         }
     }
 
-    return Unmanaged.passRetained(event)
+    return Unmanaged.passUnretained(event)
 }
 
 // MARK: - App Delegate
@@ -72,6 +72,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // The App scene replaces the Settings command group, so Command+, can no
+        // longer open the empty placeholder window; this takes out the separator
+        // that removing the "Settings…" item leaves behind.
+        JorvikApplicationMenu.removeRedundantSeparators()
+
         NSApp.setActivationPolicy(.accessory)
 
         let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue(): true] as CFDictionary
