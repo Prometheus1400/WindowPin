@@ -26,7 +26,7 @@ class WindowOverlay: NSPanel {
     private let contentLayer = CALayer()
     private var scWindow: SCWindow?
     private var stream: SCStream?
-    private let sampleQueue = DispatchQueue(label: "cc.jorviksoftware.WindowPin.frames")
+    private let sampleQueue = DispatchQueue(label: "io.github.Prometheus1400.WindowPin.frames")
     /// Retains the pixel buffer whose IOSurface the layer currently displays,
     /// so ScreenCaptureKit can't recycle it out from under the layer.
     private var displayedFrame: CVPixelBuffer?

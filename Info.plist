@@ -5,7 +5,7 @@
     <key>CFBundleExecutable</key>
     <string>WindowPin</string>
     <key>CFBundleIdentifier</key>
-    <string>cc.jorviksoftware.WindowPin</string>
+    <string>io.github.Prometheus1400.WindowPin</string>
     <key>CFBundleName</key>
     <string>WindowPin</string>
     <key>CFBundleDisplayName</key>

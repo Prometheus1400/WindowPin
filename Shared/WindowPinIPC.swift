@@ -33,9 +33,9 @@ public struct WindowPinResponse: Codable, Equatable, Sendable {
 }
 
 public enum WindowPinIPC {
-    public static let appBundleIdentifier = "cc.jorviksoftware.WindowPin"
-    public static let commandNotification = Notification.Name("cc.jorviksoftware.WindowPin.cli-command")
-    public static let responseNotification = Notification.Name("cc.jorviksoftware.WindowPin.cli-response")
+    public static let appBundleIdentifier = "io.github.Prometheus1400.WindowPin"
+    public static let commandNotification = Notification.Name("io.github.Prometheus1400.WindowPin.cli-command")
+    public static let responseNotification = Notification.Name("io.github.Prometheus1400.WindowPin.cli-response")
     public static let requestIDKey = "requestID"
     public static let commandKey = "command"
     public static let payloadKey = "payload"

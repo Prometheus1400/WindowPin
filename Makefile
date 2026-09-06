@@ -7,7 +7,7 @@
 BUNDLE_NAME      := WindowPin
 BUNDLE_TYPE      := app
 PRODUCT_NAME     := WindowPin.app
-BUNDLE_ID        := cc.jorviksoftware.WindowPin
+BUNDLE_ID        := io.github.Prometheus1400.WindowPin
 BUILD_SYSTEM     := spm
 SPM_PRODUCT      := WindowPin
 
