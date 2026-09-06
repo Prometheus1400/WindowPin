@@ -71,12 +71,13 @@ final class PinnedWindowTracker {
 
         pinnedWindows.insert(pw)
 
-        // Always create the overlay — if Screen Recording isn't granted,
-        // the capture will just return nil and the overlay stays blank.
         let overlay = WindowOverlay(
             windowID: CGWindowID(window.windowID),
             pid: window.ownerPID
         )
+        overlay.onCaptureAuthorizationDenied = { [weak self] in
+            self?.unpin(windowID: window.windowID)
+        }
         overlays[window.windowID] = overlay
         wplog("pin: overlay created for wid=\(window.windowID)")
 

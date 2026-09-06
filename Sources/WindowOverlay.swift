@@ -35,6 +35,10 @@ class WindowOverlay: NSPanel {
     /// Points→pixels scale of the capture, taken from the content filter.
     private var streamPixelScale: CGFloat = 2
     private var didLogFirstFrame = false
+    private var captureAuthorizationDenied = false
+    /// Lets the tracker remove a pin that cannot produce an overlay instead of
+    /// leaving a blank panel and repeatedly requesting Screen Recording access.
+    var onCaptureAuthorizationDenied: (() -> Void)?
     /// Total frames delivered by the stream (diagnostics).
     private(set) var framesReceived = 0
 
@@ -99,6 +103,7 @@ class WindowOverlay: NSPanel {
     // MARK: - ScreenCaptureKit window resolution
 
     private func resolveSCWindow(thenStartStream: Bool = false) {
+        guard !captureAuthorizationDenied else { return }
         Task { @MainActor in
             do {
                 let content = try await SCShareableContent.excludingDesktopWindows(
@@ -116,9 +121,26 @@ class WindowOverlay: NSPanel {
                 }
             } catch {
                 wplog("overlay: SCShareableContent error: \(error)")
-                scheduleResolveRetry(thenStartStream: thenStartStream)
+                if isCaptureAuthorizationDenied(error) {
+                    handleCaptureAuthorizationDenied()
+                } else {
+                    scheduleResolveRetry(thenStartStream: thenStartStream)
+                }
             }
         }
+    }
+
+    private func isCaptureAuthorizationDenied(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        return nsError.domain == SCStreamErrorDomain
+            && nsError.code == SCStreamError.Code.userDeclined.rawValue
+    }
+
+    private func handleCaptureAuthorizationDenied() {
+        guard !captureAuthorizationDenied else { return }
+        captureAuthorizationDenied = true
+        wplog("overlay: capture permission denied; cancelling pin wid=\(targetWindowID)")
+        onCaptureAuthorizationDenied?()
     }
 
     private func scheduleResolveRetry(thenStartStream: Bool) {
@@ -254,6 +276,7 @@ class WindowOverlay: NSPanel {
     // MARK: - Live stream
 
     private func startStream() {
+        guard !captureAuthorizationDenied else { return }
         guard stream == nil else { return }
         guard let scWindow = self.scWindow else {
             resolveSCWindow(thenStartStream: true)
@@ -279,8 +302,12 @@ class WindowOverlay: NSPanel {
         newStream.startCapture { [weak self] error in
             guard let error = error else { return }
             wplog("overlay: startCapture failed wid=\(self?.targetWindowID ?? 0): \(error)")
-            DispatchQueue.main.async {
-                if self?.stream === newStream { self?.stream = nil }
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                if self.stream === newStream { self.stream = nil }
+                if self.isCaptureAuthorizationDenied(error) {
+                    self.handleCaptureAuthorizationDenied()
+                }
             }
         }
         wplog("overlay: stream starting wid=\(targetWindowID) maxFPS=\(Self.captureRate)")
@@ -426,6 +453,10 @@ extension WindowOverlay: SCStreamOutput, SCStreamDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             if self.stream === stream { self.stream = nil }
+            if self.isCaptureAuthorizationDenied(error) {
+                self.handleCaptureAuthorizationDenied()
+                return
+            }
             // Window may have closed (tracker will prune it), or capture broke
             // (display reconfigure) — retry while we're still pinned-visible.
             if self.isPinVisible {
