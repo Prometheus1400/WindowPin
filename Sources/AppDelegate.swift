@@ -3,6 +3,7 @@ import ApplicationServices
 import SwiftUI
 import ServiceManagement
 import Sparkle
+import WindowPinIPC
 
 // MARK: - Global CGEvent tap callback (must be a C-compatible function)
 
@@ -102,6 +103,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.updateIcon()
         }
 
+        registerCLICommands()
+
         focusObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
@@ -145,6 +148,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         permissionTimer?.invalidate()
+        DistributedNotificationCenter.default().removeObserver(
+            self,
+            name: WindowPinIPC.commandNotification,
+            object: nil
+        )
         if let tap = _eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
         }
@@ -271,6 +279,74 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         tracker.unpinAll()
     }
 
+    // MARK: - CLI commands
+
+    private func registerCLICommands() {
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(handleCLICommand(_:)),
+            name: WindowPinIPC.commandNotification,
+            object: nil,
+            suspensionBehavior: .deliverImmediately
+        )
+    }
+
+    @objc private func handleCLICommand(_ notification: Notification) {
+        guard
+            let userInfo = notification.userInfo,
+            let requestID = userInfo[WindowPinIPC.requestIDKey] as? String,
+            let commandName = userInfo[WindowPinIPC.commandKey] as? String,
+            let command = WindowPinCommand(rawValue: commandName)
+        else { return }
+
+        let response: WindowPinResponse
+        switch command {
+        case .toggle:
+            if let message = togglePinFrontmostWindow() {
+                response = makeCLIResponse(success: true, message: message)
+            } else {
+                response = makeCLIResponse(success: false, message: "No foreign window found")
+            }
+        case .list:
+            response = makeCLIResponse(success: true)
+        case .unpinAll:
+            let count = tracker.pinnedWindows.count
+            tracker.unpinAll()
+            response = makeCLIResponse(
+                success: true,
+                message: "Unpinned \(count) window\(count == 1 ? "" : "s")"
+            )
+        }
+
+        guard let payload = try? WindowPinIPC.encode(response) else { return }
+        DistributedNotificationCenter.default().postNotificationName(
+            WindowPinIPC.responseNotification,
+            object: nil,
+            userInfo: [
+                WindowPinIPC.requestIDKey: requestID,
+                WindowPinIPC.payloadKey: payload,
+            ],
+            deliverImmediately: true
+        )
+    }
+
+    private func makeCLIResponse(success: Bool, message: String? = nil) -> WindowPinResponse {
+        let windows = tracker.pinnedWindows
+            .map {
+                PinnedWindowInfo(
+                    windowID: $0.windowID,
+                    ownerPID: Int32($0.ownerPID),
+                    ownerName: $0.ownerName,
+                    windowTitle: $0.windowTitle
+                )
+            }
+            .sorted {
+                ($0.ownerName, $0.windowTitle, $0.windowID)
+                    < ($1.ownerName, $1.windowTitle, $1.windowID)
+            }
+        return WindowPinResponse(success: success, message: message, windows: windows)
+    }
+
     @objc private func quit() {
         tracker.unpinAll()
         NSApp.terminate(nil)
@@ -359,16 +435,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return true
     }
 
-    private func togglePinFrontmostWindow() {
-        guard let fw = WindowDetector.getFrontmostForeignWindow() else {
+    @discardableResult
+    private func togglePinFrontmostWindow() -> String? {
+        guard let fw = WindowDetector.getFrontmostForeignWindow() ?? lastForeignWindow else {
             wplog("togglePin: No foreign window found")
-            return
+            return nil
         }
         let wasPinned = tracker.isPinned(windowID: fw.windowID)
         tracker.toggle(window: fw)
         let action = wasPinned ? "Unpinned" : "Pinned"
         let title = fw.windowTitle.isEmpty ? fw.ownerName : fw.windowTitle
         wplog("togglePin: \(action) '\(title)' (wid=\(fw.windowID))")
+        return "\(action) \(fw.ownerName) — \(title) (window \(fw.windowID))"
     }
 
     // MARK: - Shortcut configuration

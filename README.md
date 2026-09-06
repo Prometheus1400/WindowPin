@@ -44,6 +44,37 @@ There are two ways to pin a window:
 
 Press the shortcut again to unpin.
 
+### Using the command line
+
+The `windowpinctl` executable controls an already-running WindowPin instance:
+
+```sh
+windowpinctl toggle
+windowpinctl list
+windowpinctl list --json
+windowpinctl unpin-all
+```
+
+`list` prints one tab-separated window per line: window ID, owner PID, app name,
+and window title. `--json` returns a stable response object suitable for scripts.
+The window IDs are Core Graphics window IDs, so window managers can correlate
+them with their own window listings.
+
+Release builds include the controller at
+`WindowPin.app/Contents/MacOS/windowpinctl`. Invoke it there or add a symlink to
+a directory on your `PATH`:
+
+```sh
+ln -s /Applications/WindowPin.app/Contents/MacOS/windowpinctl ~/.local/bin/windowpinctl
+```
+
+For example, an AeroSpace binding can toggle the focused window without
+synthesising another keyboard shortcut:
+
+```toml
+alt-p = 'exec-and-forget /Applications/WindowPin.app/Contents/MacOS/windowpinctl toggle'
+```
+
 ### Using the menu
 
 1. Click the window you want to pin to bring it to the front

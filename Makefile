@@ -17,3 +17,21 @@ EMBEDDED_FRAMEWORKS := Sparkle
 ENTITLEMENTS     := WindowPin.entitlements
 
 include ../jorvik-release/release.mk
+
+# Ship the controller beside the app executable so it is signed and versioned
+# with the app. Users can invoke it in place or symlink it into their PATH.
+.PHONY: build-cli
+build: build-cli
+
+build-cli:
+	@echo "→ build windowpinctl (swift build, universal)"
+	swift build -c release --arch arm64 --arch x86_64 \
+		--product windowpinctl $(SPM_EMBED_FLAGS)
+	mkdir -p "$(BUILT_BUNDLE)/Contents/MacOS"
+	if [[ -f ".build/apple/Products/Release/windowpinctl" ]]; then \
+		cp ".build/apple/Products/Release/windowpinctl" \
+			"$(BUILT_BUNDLE)/Contents/MacOS/windowpinctl"; \
+	else \
+		cp ".build/release/windowpinctl" \
+			"$(BUILT_BUNDLE)/Contents/MacOS/windowpinctl"; \
+	fi
